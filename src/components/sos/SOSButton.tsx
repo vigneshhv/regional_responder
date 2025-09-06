@@ -24,7 +24,7 @@ export const SOSButton: React.FC<SOSButtonProps> = ({ onSOS }) => {
       // Get user profile for initiator information
       const { data: profile } = await supabase
         .from('user_profiles')
-        .select('full_name, phone')
+        .select('name, phone')
         .eq('user_id', user?.id)
         .single();
 
