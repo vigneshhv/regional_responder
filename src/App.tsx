@@ -93,7 +93,7 @@ function AppContent() {
       <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading He Help One...</p>
+          <p className="text-gray-600">Loading Regional Rapid Responder...</p>
         </div>
       </div>
     );
@@ -110,7 +110,7 @@ function AppContent() {
                 <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
                   <AlertTriangle className="h-5 w-5 text-white" />
                 </div>
-                <h1 className="text-xl font-bold text-gray-900">He Help One</h1>
+                <h1 className="text-xl font-bold text-gray-900">Regional Rapid Responder</h1>
               </div>
               <button
                 onClick={() => setShowAuthModal(true)}
@@ -179,7 +179,7 @@ function AppContent() {
             onClick={() => setShowAuthModal(true)}
             className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-200 transform hover:scale-[1.02] shadow-xl"
           >
-            Join He Help One
+            Join Regional Rapid Responder
           </button>
         </div>
 
@@ -221,7 +221,7 @@ function AppContent() {
             <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center mr-3">
               <AlertTriangle className="h-5 w-5 text-white" />
             </div>
-            <h1 className="text-xl font-bold text-gray-900">He Help One</h1>
+            <h1 className="text-xl font-bold text-gray-900">Regional Rapid Responder</h1>
           </div>
         </div>
       </div>
