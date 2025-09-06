@@ -28,20 +28,6 @@ export const SOSButton: React.FC<SOSButtonProps> = ({ onSOS }) => {
         .eq('user_id', user?.id)
         .single();
 
-      // Reverse geocode to get address
-      let address = '';
-      try {
-        const response = await fetch(
-          `https://api.opencagedata.com/geocode/v1/json?q=${userLocation.latitude}+${userLocation.longitude}&key=demo&limit=1`
-        );
-        const data = await response.json();
-        if (data.results && data.results[0]) {
-          address = data.results[0].formatted;
-        }
-      } catch (error) {
-        console.warn('Failed to get address:', error);
-      }
-
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy: true,
