@@ -15,6 +15,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showConfirmation, setShowConfirmation] = useState(false);
   const { signUp, signIn } = useAuth();
 
   if (!isOpen) return null;
@@ -26,17 +27,55 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
     try {
       if (isSignUp) {
-        await signUp(email, password, { name, phone });
+        const result = await signUp(email, password, { name, phone });
+        if (result?.needsConfirmation) {
+          setShowConfirmation(true);
+          return;
+        }
       } else {
         await signIn(email, password);
       }
       onClose();
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'Authentication failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
+
+  if (showConfirmation) {
+    return (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl w-full max-w-md shadow-2xl">
+          <div className="flex justify-between items-center p-6 border-b">
+            <h2 className="text-xl font-semibold">Check Your Email</h2>
+            <button
+              onClick={() => {
+                setShowConfirmation(false);
+                onClose();
+              }}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="p-6 text-center">
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Mail className="h-8 w-8 text-blue-600" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Verify Your Email</h3>
+            <p className="text-gray-600 mb-4">
+              We've sent a verification link to <strong>{email}</strong>. 
+              Please check your email and click the link to activate your account.
+            </p>
+            <p className="text-sm text-gray-500">
+              After verification, you can sign in with your credentials.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">

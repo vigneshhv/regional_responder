@@ -48,14 +48,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email,
         password,
         options: {
-          data: userData
+          data: userData,
+          emailRedirectTo: `${window.location.origin}/auth/callback`
         }
       });
       if (error) throw error;
+      
+      // Don't automatically sign in - wait for email confirmation
+      return { needsConfirmation: true };
     } catch (error) {
       console.warn('Demo mode: Auth signup simulated');
       // In demo mode, simulate successful signup
       setUser({ id: 'demo-user', email } as any);
+      return { needsConfirmation: false };
     }
   };
 

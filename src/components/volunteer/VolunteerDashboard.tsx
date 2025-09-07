@@ -1,21 +1,43 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Clock, Phone, MessageCircle, Heart, Flame, Shield, HelpCircle } from 'lucide-react';
+import { MapPin, Clock, Phone, MessageCircle, Heart, Flame, Shield, HelpCircle, ExternalLink } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useRealTimeNotifications } from '../../hooks/useRealTimeNotifications';
+import { generateGoogleMapsUrl, reverseGeocode } from '../../lib/maps';
 import { SOSEvent } from '../../types';
+
+interface SOSEventWithLocation extends SOSEvent {
+  locationName?: string;
+}
 
 export const VolunteerDashboard: React.FC = () => {
   const [isVolunteer, setIsVolunteer] = useState(false);
-  const [availableSOSEvents, setAvailableSOSEvents] = useState<SOSEvent[]>([]);
+  const [availableSOSEvents, setAvailableSOSEvents] = useState<SOSEventWithLocation[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const { isListening } = useRealTimeNotifications();
 
   useEffect(() => {
     checkVolunteerStatus();
+  }, [user]);
+
+  useEffect(() => {
     if (isVolunteer) {
       fetchNearbySOSEvents();
+      
+      // Listen for real-time SOS events
+      const handleNewSOSEvent = (event: CustomEvent) => {
+        const newEvent = event.detail;
+        setAvailableSOSEvents(prev => [newEvent, ...prev]);
+      };
+
+      window.addEventListener('newSOSEvent', handleNewSOSEvent as EventListener);
+      
+      return () => {
+        window.removeEventListener('newSOSEvent', handleNewSOSEvent as EventListener);
+      };
     }
-  }, [isVolunteer, user]);
+  }, [isVolunteer]);
 
   const checkVolunteerStatus = async () => {
     if (!user) return;
@@ -38,7 +60,20 @@ export const VolunteerDashboard: React.FC = () => {
       .eq('status', 'active')
       .order('created_at', { ascending: false });
 
-    setAvailableSOSEvents(data || []);
+    if (data) {
+      // Add location names to events
+      const eventsWithLocation = await Promise.all(
+        data.map(async (event) => {
+          try {
+            const locationName = await reverseGeocode(event.latitude, event.longitude);
+            return { ...event, locationName };
+          } catch {
+            return { ...event, locationName: `${event.latitude.toFixed(4)}, ${event.longitude.toFixed(4)}` };
+          }
+        })
+      );
+      setAvailableSOSEvents(eventsWithLocation);
+    }
   };
 
   const toggleVolunteerStatus = async () => {
@@ -146,10 +181,19 @@ export const VolunteerDashboard: React.FC = () => {
                   </div>
 
                   <div className="mb-4">
-                    <p className="text-sm text-gray-600 flex items-center">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm text-gray-600 flex items-center">
                       <MapPin className="h-4 w-4 mr-1" />
-                      {event.address || `${event.latitude.toFixed(4)}, ${event.longitude.toFixed(4)}`}
-                    </p>
+                        {event.locationName || event.address || 'Getting location...'}
+                      </p>
+                      <button
+                        onClick={() => window.open(generateGoogleMapsUrl(event.latitude, event.longitude, `${event.type} Emergency`), '_blank')}
+                        className="flex items-center text-blue-600 hover:text-blue-700 text-xs font-medium"
+                      >
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        Map
+                      </button>
+                    </div>
                     {event.description && (
                       <p className="text-sm text-gray-600 mt-2">{event.description}</p>
                     )}

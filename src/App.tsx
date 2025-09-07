@@ -10,6 +10,7 @@ import { ProfileTab } from './components/profile/ProfileTab';
 import { BottomNav } from './components/navigation/BottomNav';
 import { supabase, getCurrentPosition } from './lib/supabase';
 import { useNotifications } from './hooks/useNotifications';
+import { useRealTimeNotifications } from './hooks/useRealTimeNotifications';
 import { SOSEvent } from './types';
 
 function AppContent() {
@@ -18,6 +19,7 @@ function AppContent() {
   const [activeSOSEvent, setActiveSOSEvent] = useState<SOSEvent | null>(null);
   const { user, loading } = useAuth();
   const { requestPermission, sendSOSNotification } = useNotifications();
+  useRealTimeNotifications(); // Initialize real-time notifications
 
   useEffect(() => {
     // Request notification permission on app load

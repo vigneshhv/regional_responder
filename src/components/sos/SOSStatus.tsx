@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, X, MapPin, Phone, MessageCircle, Clock } from 'lucide-react';
+import { CheckCircle, X, MapPin, Phone, MessageCircle, Clock, ExternalLink } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { generateGoogleMapsUrl, reverseGeocode } from '../../lib/maps';
 import { SOSEvent, VolunteerResponse } from '../../types';
 
 interface SOSStatusProps {
@@ -12,12 +13,14 @@ interface SOSStatusProps {
 export const SOSStatus: React.FC<SOSStatusProps> = ({ activeEvent, onEventResolved }) => {
   const [responses, setResponses] = useState<(VolunteerResponse & { volunteer_name?: string })[]>([]);
   const [loading, setLoading] = useState(false);
+  const [locationName, setLocationName] = useState<string>('');
   const { user } = useAuth();
 
   useEffect(() => {
     if (activeEvent) {
       fetchResponses();
       const interval = setInterval(fetchResponses, 5000); // Poll every 5 seconds
+      getLocationName();
       return () => clearInterval(interval);
     }
   }, [activeEvent]);
@@ -42,6 +45,17 @@ export const SOSStatus: React.FC<SOSStatusProps> = ({ activeEvent, onEventResolv
         volunteer_name: response.volunteers?.user_profiles?.name || 'Unknown Volunteer'
       }));
       setResponses(formattedResponses);
+    }
+  };
+
+  const getLocationName = async () => {
+    if (!activeEvent) return;
+    
+    try {
+      const name = await reverseGeocode(activeEvent.latitude, activeEvent.longitude);
+      setLocationName(name);
+    } catch (error) {
+      setLocationName(`${activeEvent.latitude.toFixed(4)}, ${activeEvent.longitude.toFixed(4)}`);
     }
   };
 
@@ -100,9 +114,18 @@ export const SOSStatus: React.FC<SOSStatusProps> = ({ activeEvent, onEventResolv
       </div>
 
       <div className="space-y-4 mb-6">
-        <div className="flex items-center text-sm">
-          <MapPin className="h-4 w-4 mr-2 text-gray-400" />
-          <span>{activeEvent.address || 'Location shared with responders'}</span>
+        <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center">
+            <MapPin className="h-4 w-4 mr-2 text-gray-400" />
+            <span>{locationName || activeEvent.address || 'Getting location...'}</span>
+          </div>
+          <button
+            onClick={() => window.open(generateGoogleMapsUrl(activeEvent.latitude, activeEvent.longitude, `${activeEvent.type} Emergency`), '_blank')}
+            className="flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium"
+          >
+            <ExternalLink className="h-3 w-3 mr-1" />
+            View Map
+          </button>
         </div>
 
         {activeEvent.description && (

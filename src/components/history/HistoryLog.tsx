@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, MapPin, Heart, Flame, Shield, HelpCircle, CheckCircle, X } from 'lucide-react';
+import { Clock, MapPin, Heart, Flame, Shield, HelpCircle, CheckCircle, X, ExternalLink } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { generateGoogleMapsUrl, reverseGeocode } from '../../lib/maps';
 import { SOSEvent } from '../../types';
 
+interface SOSEventWithLocation extends SOSEvent {
+  locationName?: string;
+}
+
 export const HistoryLog: React.FC = () => {
-  const [events, setEvents] = useState<SOSEvent[]>([]);
+  const [events, setEvents] = useState<SOSEventWithLocation[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
@@ -22,7 +27,20 @@ export const HistoryLog: React.FC = () => {
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
-    setEvents(data || []);
+    if (data) {
+      // Add location names to events
+      const eventsWithLocation = await Promise.all(
+        data.map(async (event) => {
+          try {
+            const locationName = await reverseGeocode(event.latitude, event.longitude);
+            return { ...event, locationName };
+          } catch {
+            return { ...event, locationName: `${event.latitude.toFixed(4)}, ${event.longitude.toFixed(4)}` };
+          }
+        })
+      );
+      setEvents(eventsWithLocation);
+    }
     setLoading(false);
   };
 
@@ -104,7 +122,8 @@ export const HistoryLog: React.FC = () => {
                   </span>
                 </div>
                 
-                <div className="flex items-center">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
                   <MapPin className="h-4 w-4 mr-2" />
                   <span>
                     {event.address || `${event.latitude.toFixed(4)}, ${event.longitude.toFixed(4)}`}
@@ -121,8 +140,16 @@ export const HistoryLog: React.FC = () => {
                   <div className="flex items-center text-green-600">
                     <CheckCircle className="h-4 w-4 mr-2" />
                     <span>
-                      Resolved at {new Date(event.resolved_at).toLocaleString()}
+                      {event.locationName || event.address || 'Location unavailable'}
                     </span>
+                  </div>
+                  <button
+                    onClick={() => window.open(generateGoogleMapsUrl(event.latitude, event.longitude, `${event.type} Emergency - ${new Date(event.created_at).toLocaleDateString()}`), '_blank')}
+                    className="flex items-center text-blue-600 hover:text-blue-700 text-xs font-medium"
+                  >
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    Map
+                  </button>
                   </div>
                 )}
               </div>
