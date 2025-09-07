@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, isDemoMode } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from './useNotifications';
 
@@ -33,6 +33,13 @@ export const useRealTimeNotifications = () => {
 
   const startListening = () => {
     if (isListening) return;
+
+    // Skip real-time subscriptions in demo mode
+    if (isDemoMode) {
+      console.log('Demo mode: Real-time notifications disabled');
+      setIsListening(true);
+      return;
+    }
 
     // Listen for new SOS events
     const sosSubscription = supabase

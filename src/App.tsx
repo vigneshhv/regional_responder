@@ -8,7 +8,7 @@ import { VolunteerDashboard } from './components/volunteer/VolunteerDashboard';
 import { HistoryLog } from './components/history/HistoryLog';
 import { ProfileTab } from './components/profile/ProfileTab';
 import { BottomNav } from './components/navigation/BottomNav';
-import { supabase, getCurrentPosition } from './lib/supabase';
+import { supabase, getCurrentPosition, isDemoMode } from './lib/supabase';
 import { useNotifications } from './hooks/useNotifications';
 import { useRealTimeNotifications } from './hooks/useRealTimeNotifications';
 import { SOSEvent } from './types';
@@ -96,6 +96,9 @@ function AppContent() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading Regional Rapid Responder...</p>
+          {isDemoMode && (
+            <p className="text-sm text-amber-600 mt-2">Running in demo mode</p>
+          )}
         </div>
       </div>
     );
@@ -136,6 +139,13 @@ function AppContent() {
             <p className="text-lg text-gray-600 leading-relaxed">
               Connect with nearby volunteers and emergency services instantly when you need help most.
             </p>
+            {isDemoMode && (
+              <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-amber-800 text-sm">
+                  🚧 Demo Mode: This is a demonstration version. In production, connect to Supabase for full functionality.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Features Preview */}

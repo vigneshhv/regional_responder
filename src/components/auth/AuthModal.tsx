@@ -65,12 +65,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             </div>
             <h3 className="text-lg font-semibold mb-2">Verify Your Email</h3>
             <p className="text-gray-600 mb-4">
-              We've sent a verification link to <strong>{email}</strong>. 
-              Please check your email and click the link to activate your account.
+              {isDemoMode ? (
+                <>This is a demo version. In a real deployment, we would send a verification link to <strong>{email}</strong>. For demo purposes, you can now sign in directly.</>
+              ) : (
+                <>We've sent a verification link to <strong>{email}</strong>. Please check your email and click the link to activate your account.</>
+              )}
             </p>
-            <p className="text-sm text-gray-500">
-              After verification, you can sign in with your credentials.
-            </p>
+            {isDemoMode && (
+              <button
+                onClick={() => {
+                  setShowConfirmation(false);
+                  setIsSignUp(false);
+                  setError('');
+                }}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+              >
+                Continue to Sign In
+              </button>
+            )}
+            {!isDemoMode && (
+              <p className="text-sm text-gray-500">
+                After verification, you can sign in with your credentials.
+              </p>
+            )}
           </div>
         </div>
       </div>

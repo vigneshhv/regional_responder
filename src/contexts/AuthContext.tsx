@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { supabase, isDemoMode } from '../lib/supabase';
 
 interface AuthContextType {
   user: User | null;
@@ -44,6 +44,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (email: string, password: string, userData: any) => {
     try {
+      if (isDemoMode) {
+        // In demo mode, simulate the signup process
+        console.log('Demo mode: Simulating signup for', email);
+        return { needsConfirmation: true };
+      }
+      
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -54,27 +60,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       if (error) throw error;
       
-      // Don't automatically sign in - wait for email confirmation
       return { needsConfirmation: true };
     } catch (error) {
-      console.warn('Demo mode: Auth signup simulated');
-      // In demo mode, simulate successful signup
-      setUser({ id: 'demo-user', email } as any);
-      return { needsConfirmation: false };
+      console.error('Signup error:', error);
+      throw error;
     }
   };
 
   const signIn = async (email: string, password: string) => {
     try {
+      if (isDemoMode) {
+        // In demo mode, simulate successful signin after "email confirmation"
+        console.log('Demo mode: Simulating signin for', email);
+        setUser({ id: 'demo-user', email } as any);
+        return;
+      }
+      
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
       if (error) throw error;
     } catch (error) {
-      console.warn('Demo mode: Auth signin simulated');
-      // In demo mode, simulate successful signin
-      setUser({ id: 'demo-user', email } as any);
+      console.error('Signin error:', error);
+      throw error;
     }
   };
 
@@ -83,7 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
     } catch (error) {
-      console.warn('Demo mode: Auth signout simulated');
+      console.error('Signout error:', error);
     }
     setUser(null);
   };
