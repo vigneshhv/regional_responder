@@ -124,10 +124,18 @@ export const HistoryLog: React.FC = () => {
                 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
-                  <MapPin className="h-4 w-4 mr-2" />
-                  <span>
-                    {event.address || `${event.latitude.toFixed(4)}, ${event.longitude.toFixed(4)}`}
-                  </span>
+                    <MapPin className="h-4 w-4 mr-2" />
+                    <span>
+                      {event.address || `${event.latitude.toFixed(4)}, ${event.longitude.toFixed(4)}`}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => window.open(generateGoogleMapsUrl(event.latitude, event.longitude, `${event.type} Emergency - ${new Date(event.created_at).toLocaleDateString()}`), '_blank')}
+                    className="flex items-center text-blue-600 hover:text-blue-700 text-xs font-medium"
+                  >
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    Map
+                  </button>
                 </div>
 
                 {event.description && (
@@ -140,16 +148,8 @@ export const HistoryLog: React.FC = () => {
                   <div className="flex items-center text-green-600">
                     <CheckCircle className="h-4 w-4 mr-2" />
                     <span>
-                      {event.locationName || event.address || 'Location unavailable'}
+                      Resolved at {new Date(event.resolved_at).toLocaleString()}
                     </span>
-                  </div>
-                  <button
-                    onClick={() => window.open(generateGoogleMapsUrl(event.latitude, event.longitude, `${event.type} Emergency - ${new Date(event.created_at).toLocaleDateString()}`), '_blank')}
-                    className="flex items-center text-blue-600 hover:text-blue-700 text-xs font-medium"
-                  >
-                    <ExternalLink className="h-3 w-3 mr-1" />
-                    Map
-                  </button>
                   </div>
                 )}
               </div>
