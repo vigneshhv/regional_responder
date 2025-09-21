@@ -17,7 +17,7 @@ export const useRealTimeNotifications = () => {
         .from('volunteers')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (data) {
         startListening();

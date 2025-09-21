@@ -46,7 +46,7 @@ export const VolunteerDashboard: React.FC = () => {
       .from('volunteers')
       .select('*')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     setIsVolunteer(!!data);
     setLoading(false);
