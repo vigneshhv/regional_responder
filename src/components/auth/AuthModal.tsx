@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, User, Mail, Lock, Phone } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { isDemoMode } from '../../lib/supabase';
 
 interface AuthModalProps {
   isOpen: boolean;

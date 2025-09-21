@@ -24,16 +24,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const ensureUserProfile = async (user: User) => {
+    try {
+      // Check if profile exists
+      const { data: existingProfile, error: fetchError } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error('Error checking user profile:', fetchError);
+        return;
+      }
+
+      // Create profile if it doesn't exist
+      if (!existingProfile) {
+        const { error: insertError } = await supabase
+          .from('user_profiles')
+          .insert({
+            user_id: user.id,
+            name: user.user_metadata?.name || user.email?.split('@')[0] || '',
+            phone: user.user_metadata?.phone || '',
+            medical_info: ''
+          });
+
+        if (insertError) {
+          console.error('Error creating user profile:', insertError);
+        }
+      }
+    } catch (error) {
+      console.error('Error ensuring user profile:', error);
+    }
+  };
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        await ensureUserProfile(session.user);
+      }
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      async (_event, session) => {
+        if (session?.user) {
+          await ensureUserProfile(session.user);
+        }
         setUser(session?.user ?? null);
         setLoading(false);
       }
