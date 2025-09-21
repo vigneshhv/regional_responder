@@ -23,8 +23,14 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileCreated, setProfileCreated] = useState<Set<string>>(new Set());
 
   const ensureUserProfile = async (user: User) => {
+    // Prevent multiple profile creation attempts for the same user
+    if (profileCreated.has(user.id)) {
+      return;
+    }
+
     try {
       // Check if profile exists
       const { data: existingProfile, error: fetchError } = await supabase
@@ -35,6 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (fetchError && fetchError.code !== 'PGRST116') {
         console.error('Error checking user profile:', fetchError);
+        setProfileCreated(prev => new Set(prev).add(user.id));
         return;
       }
 
@@ -53,8 +60,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.error('Error creating user profile:', insertError);
         }
       }
+      
+      // Mark profile as processed (either existed or created)
+      setProfileCreated(prev => new Set(prev).add(user.id));
     } catch (error) {
       console.error('Error ensuring user profile:', error);
+      setProfileCreated(prev => new Set(prev).add(user.id));
     }
   };
   useEffect(() => {
@@ -62,8 +73,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         await ensureUserProfile(session.user);
+        setUser(session.user);
+      } else {
+        setUser(null);
       }
-      setUser(session?.user ?? null);
       setLoading(false);
     });
 
@@ -72,9 +85,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       async (_event, session) => {
         if (session?.user) {
           await ensureUserProfile(session.user);
+          setUser(session.user);
+        } else {
+          setUser(null);
         }
-        setUser(session?.user ?? null);
-        setLoading(false);
+        if (loading) {
+          setLoading(false);
+        }
       }
     );
 
@@ -112,6 +129,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // In demo mode, simulate successful signin after "email confirmation"
         console.log('Demo mode: Simulating signin for', email);
         setUser({ id: 'demo-user', email } as any);
+        setLoading(false);
         return;
       }
       
@@ -134,6 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Signout error:', error);
     }
     setUser(null);
+    setProfileCreated(new Set());
   };
 
   const value = {
