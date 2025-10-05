@@ -26,13 +26,15 @@ function createMockSupabaseClient() {
 
   return {
     auth: {
-      getSession: () => Promise.resolve({ 
-        data: { session: currentUser ? { user: currentUser } : null }, 
-        error: null 
-      }),
+      getSession: async () => {
+        return Promise.resolve({
+          data: { session: currentUser ? { user: currentUser } : null },
+          error: null
+        });
+      },
       onAuthStateChange: (callback: any) => {
-        // Simulate auth state changes
-        setTimeout(() => callback('SIGNED_IN', currentUser ? { user: currentUser } : null), 100);
+        // Immediately call callback with current state
+        callback('INITIAL_SESSION', currentUser ? { user: currentUser } : null);
         return { data: { subscription: { unsubscribe: () => {} } } };
       },
       signUp: async ({ email, password, options }: any) => {

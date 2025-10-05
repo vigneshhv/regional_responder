@@ -70,15 +70,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        await ensureUserProfile(session.user);
-        setUser(session.user);
-      } else {
+    supabase.auth.getSession()
+      .then(async ({ data: { session } }) => {
+        if (session?.user) {
+          await ensureUserProfile(session.user);
+          setUser(session.user);
+        } else {
+          setUser(null);
+        }
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error('Error getting session:', error);
         setUser(null);
-      }
-      setLoading(false);
-    });
+        setLoading(false);
+      });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
