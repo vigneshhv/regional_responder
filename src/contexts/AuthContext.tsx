@@ -69,9 +69,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
   useEffect(() => {
-    // Get initial session
+    // Get initial session with timeout
+    const sessionTimeout = setTimeout(() => {
+      console.warn('Session check timed out');
+      setUser(null);
+      setLoading(false);
+    }, 5000); // 5 second timeout
+
     supabase.auth.getSession()
       .then(async ({ data: { session } }) => {
+        clearTimeout(sessionTimeout);
         if (session?.user) {
           await ensureUserProfile(session.user);
           setUser(session.user);
@@ -81,6 +88,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(false);
       })
       .catch((error) => {
+        clearTimeout(sessionTimeout);
         console.error('Error getting session:', error);
         setUser(null);
         setLoading(false);
@@ -101,7 +109,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(sessionTimeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, userData: any) => {
