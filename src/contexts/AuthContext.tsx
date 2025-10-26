@@ -111,7 +111,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('Demo mode: Simulating signup for', email);
         return { needsConfirmation: true };
       }
-      
+
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -120,11 +120,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           emailRedirectTo: `${window.location.origin}/auth/callback`
         }
       });
-      if (error) throw error;
-      
+      if (error) {
+        if (error.message?.includes('Database error querying schema')) {
+          throw new Error('Authentication service is temporarily unavailable. Please try again in a few moments.');
+        }
+        throw error;
+      }
+
       return { needsConfirmation: true };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Signup error:', error);
+      if (error.message?.includes('Database error querying schema') || error.message?.includes('Failed to fetch')) {
+        throw new Error('Authentication service is temporarily unavailable. Please try again in a few moments.');
+      }
       throw error;
     }
   };
@@ -138,14 +146,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(false);
         return;
       }
-      
+
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
-      if (error) throw error;
-    } catch (error) {
+      if (error) {
+        if (error.message?.includes('Database error querying schema')) {
+          throw new Error('Authentication service is temporarily unavailable. Please try again in a few moments.');
+        }
+        throw error;
+      }
+    } catch (error: any) {
       console.error('Signin error:', error);
+      if (error.message?.includes('Database error querying schema') || error.message?.includes('Failed to fetch')) {
+        throw new Error('Authentication service is temporarily unavailable. Please try again in a few moments.');
+      }
       throw error;
     }
   };
