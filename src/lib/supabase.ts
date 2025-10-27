@@ -87,9 +87,21 @@ function createMockSupabaseClient() {
             } else if (table === 'volunteers') {
               data = mockVolunteers.find(v => v[column] === value);
             }
-            return Promise.resolve({ 
-              data, 
-              error: data ? null : { code: 'PGRST116' } 
+            return Promise.resolve({
+              data,
+              error: data ? null : { code: 'PGRST116' }
+            });
+          },
+          maybeSingle: () => {
+            let data = null;
+            if (table === 'user_profiles') {
+              data = mockProfiles.find(p => p[column] === value) || null;
+            } else if (table === 'volunteers') {
+              data = mockVolunteers.find(v => v[column] === value) || null;
+            }
+            return Promise.resolve({
+              data,
+              error: null
             });
           },
           order: (orderColumn: string, options?: any) => ({

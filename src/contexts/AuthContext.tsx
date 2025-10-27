@@ -5,7 +5,7 @@ import { supabase, isDemoMode } from '../lib/supabase';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signUp: (email: string, password: string, userData: any) => Promise<void>;
+  signUp: (email: string, password: string, userData: any) => Promise<{ needsConfirmation?: boolean } | void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -94,18 +94,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(false);
       });
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        if (session?.user) {
-          await ensureUserProfile(session.user);
-          setUser(session.user);
-        } else {
-          setUser(null);
-        }
-        if (loading) {
-          setLoading(false);
-        }
+      (_event, session) => {
+        (async () => {
+          if (session?.user) {
+            await ensureUserProfile(session.user);
+            setUser(session.user);
+          } else {
+            setUser(null);
+          }
+          if (loading) {
+            setLoading(false);
+          }
+        })();
       }
     );
 
