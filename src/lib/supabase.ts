@@ -272,3 +272,11 @@ export const calculateDistance = (
 
   return R * c; // Distance in meters
 };
+export async function updateVolunteerLocation(userId, lat, lng) {
+  await supabase
+    .from('user_profiles')
+    .update({ lat, lng })
+    .eq('user_id', userId);
+}
+// Call updateVolunteerLocation whenever device location changes, or at login.
+   
