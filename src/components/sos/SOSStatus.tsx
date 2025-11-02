@@ -11,7 +11,8 @@ interface SOSStatusProps {
 }
 
 export const SOSStatus: React.FC<SOSStatusProps> = ({ activeEvent, onEventResolved }) => {
-  const [responses, setResponses] = useState<(VolunteerResponse & { volunteer_name?: string })[]>([]);
+  const [responses, setResponses] = useState<(VolunteerResponse & { volunteer_name?: string; volunteer_phone?: string })[]>([]);
+
   const [loading, setLoading] = useState(false);
   const [locationName, setLocationName] = useState<string>('');
   const { user } = useAuth();
@@ -26,27 +27,43 @@ export const SOSStatus: React.FC<SOSStatusProps> = ({ activeEvent, onEventResolv
   }, [activeEvent]);
 
   const fetchResponses = async () => {
+    
     if (!activeEvent) return;
 
-    const { data } = await supabase
-      .from('volunteer_responses')
-      .select(`
-        *,
-        volunteers!volunteer_responses_volunteer_id_fkey(
-          user_profiles!volunteers_user_id_fkey(name)
-        )
-      `)
-      .eq('sos_event_id', activeEvent.id)
-      .eq('response_type', 'accepted');
+const { data } = await supabase
+  .from('volunteer_responses')
+  .select('*')
+  .eq('sos_event_id', activeEvent.id)
+  .eq('response_type', 'accepted');
+
+setResponses(data || []);
 
     if (data) {
-      const formattedResponses = data.map(response => ({
-        ...response,
-        volunteer_name: response.volunteers?.user_profiles?.name || 'Unknown Volunteer'
-      }));
-      setResponses(formattedResponses);
+      interface SupabaseVolunteerProfiles {
+        name?: string | null;
+        phone?: string | null;
+      }
+
+      interface SupabaseVolunteer {
+        user_profiles?: SupabaseVolunteerProfiles | null;
+      }
+
+      interface SupabaseResponseRow extends VolunteerResponse {
+        volunteers?: SupabaseVolunteer | null;
+      }
+
+const formattedResponses = (data as any[]).map((response) => ({
+  ...response,
+  volunteer_name: response.volunteers?.user_profiles?.name || 'Unknown Volunteer',
+  volunteer_phone: response.volunteers?.user_profiles?.phone || ''
+}));
+console.log("formattedResponses", formattedResponses);
+setResponses(formattedResponses);
+
+
     }
   };
+  
 
   const getLocationName = async () => {
     if (!activeEvent) return;
@@ -142,7 +159,7 @@ export const SOSStatus: React.FC<SOSStatusProps> = ({ activeEvent, onEventResolv
             ✓ {responses.length} Volunteer{responses.length > 1 ? 's' : ''} Responding
           </h3>
           <div className="space-y-2">
-            {responses.map((response) => (
+            {responses.map((response: VolunteerResponse & { volunteer_name?: string; volunteer_phone?: string }) => (
               <div key={response.id} className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
                 <div>
                   <p className="font-medium text-green-800">{response.volunteer_name}</p>
@@ -154,9 +171,18 @@ export const SOSStatus: React.FC<SOSStatusProps> = ({ activeEvent, onEventResolv
                   )}
                 </div>
                 <div className="flex space-x-2">
-                  <button className="p-2 text-green-600 hover:bg-green-100 rounded-full transition-colors">
-                    <Phone className="h-4 w-4" />
-                  </button>
+         {responses.map((response) => (
+  <div key={response.id}>
+    <p>{response.volunteer_name || 'Unknown Volunteer'}</p>
+    {response.volunteer_phone && (
+      <button onClick={() => window.location.href = `tel:${response.volunteer_phone}`}>
+        📞
+      </button>
+    )}
+  </div>
+))}
+
+
                   <button className="p-2 text-green-600 hover:bg-green-100 rounded-full transition-colors">
                     <MessageCircle className="h-4 w-4" />
                   </button>

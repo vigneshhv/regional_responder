@@ -67,9 +67,37 @@ export const SOSButton: React.FC<SOSButtonProps> = ({ onSOS }) => {
 
         <div className="text-center max-w-sm">
           <p className="text-gray-600 text-sm leading-relaxed">
-            Press the SOS button to alert nearby volunteers and emergency services.
+            Press the SOS button to alert nearby volunteers.
             Your location will be shared to coordinate help.
           </p>
+<button
+  style={{
+    marginTop: '1.5rem',
+    padding: '1rem 0',
+    backgroundColor: '#f77f00',
+    color: 'white',
+    fontWeight: 600,
+    border: 'none',
+    borderRadius: '16px',
+    fontSize: '1.2rem',
+    boxShadow: '0 4px 18px rgba(0,0,0,0.07)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.7em',
+    width: '100%',
+    maxWidth: '550px',
+    marginLeft: 'auto',
+    marginRight: 'auto'
+  }}
+  aria-label="Call emergency services (112)"
+  onClick={() => window.location.href = 'tel:112'}
+>
+  <span style={{ fontSize: '1.5em', color: '#fff', display: 'flex', alignItems: 'center' }}>📞</span>
+  Emergency Services
+</button>
+
+
         </div>
       </div>
 

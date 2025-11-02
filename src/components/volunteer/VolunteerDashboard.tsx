@@ -63,7 +63,7 @@ export const VolunteerDashboard: React.FC = () => {
     if (data) {
       // Add location names to events
       const eventsWithLocation = await Promise.all(
-        data.map(async (event) => {
+        data.map(async (event: SOSEvent) => {
           try {
             const locationName = await reverseGeocode(event.latitude, event.longitude);
             return { ...event, locationName };
@@ -105,7 +105,9 @@ export const VolunteerDashboard: React.FC = () => {
       .insert({
         sos_event_id: eventId,
         volunteer_id: user.id,
-        response_type: responseType
+        response_type: responseType,
+   volunteer_name: user.user_metadata?.name || user.email || 'Unknown Volunteer',
+    volunteer_phone: user.user_metadata?.phone || ''
       });
 
     // Remove from available events
