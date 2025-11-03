@@ -1,10 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { MapPin, Clock, Phone, MessageCircle, Heart, Flame, Shield, HelpCircle, ExternalLink } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../contexts/AuthContext';
-import { useRealTimeNotifications } from '../../hooks/useRealTimeNotifications';
-import { generateGoogleMapsUrl, reverseGeocode } from '../../lib/maps';
-import { SOSEvent } from '../../types';
+import React, { useState, useEffect } from "react";
+import {
+  MapPin,
+  Clock,
+  Phone,
+  MessageCircle,
+  Heart,
+  Flame,
+  Shield,
+  HelpCircle,
+  ExternalLink,
+} from "lucide-react";
+import { supabase } from "../../lib/supabase";
+import { useAuth } from "../../contexts/AuthContext";
+import { useRealTimeNotifications } from "../../hooks/useRealTimeNotifications";
+import { generateGoogleMapsUrl, reverseGeocode } from "../../lib/maps";
+import { SOSEvent } from "../../types";
 
 interface SOSEventWithLocation extends SOSEvent {
   locationName?: string;
@@ -12,7 +22,9 @@ interface SOSEventWithLocation extends SOSEvent {
 
 export const VolunteerDashboard: React.FC = () => {
   const [isVolunteer, setIsVolunteer] = useState(false);
-  const [availableSOSEvents, setAvailableSOSEvents] = useState<SOSEventWithLocation[]>([]);
+  const [availableSOSEvents, setAvailableSOSEvents] = useState<
+    SOSEventWithLocation[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { isListening } = useRealTimeNotifications();
@@ -24,28 +36,74 @@ export const VolunteerDashboard: React.FC = () => {
   useEffect(() => {
     if (isVolunteer) {
       fetchNearbySOSEvents();
-      
+
       // Listen for real-time SOS events
       const handleNewSOSEvent = (event: CustomEvent) => {
         const newEvent = event.detail;
-        setAvailableSOSEvents(prev => [newEvent, ...prev]);
+        setAvailableSOSEvents((prev) => [newEvent, ...prev]);
       };
 
-      window.addEventListener('newSOSEvent', handleNewSOSEvent as EventListener);
-      
+      window.addEventListener(
+        "newSOSEvent",
+        handleNewSOSEvent as EventListener
+      );
+
       return () => {
-        window.removeEventListener('newSOSEvent', handleNewSOSEvent as EventListener);
+        window.removeEventListener(
+          "newSOSEvent",
+          handleNewSOSEvent as EventListener
+        );
       };
     }
   }, [isVolunteer]);
 
+  useEffect(() => {
+    if (!isVolunteer) return;
+
+    const fetchActiveEvents = async () => {
+      const { data } = await supabase
+        .from("sos_events")
+        .select("*")
+        .eq("status", "active")
+        .order("created_at", { ascending: false });
+
+      if (data) {
+        const eventsWithLocation = await Promise.all(
+          data.map(async (event: SOSEvent) => {
+            try {
+              const locationName = await reverseGeocode(
+                event.latitude,
+                event.longitude
+              );
+              return { ...event, locationName };
+            } catch {
+              return {
+                ...event,
+                locationName: `${event.latitude.toFixed(
+                  4
+                )}, ${event.longitude.toFixed(4)}`,
+              };
+            }
+          })
+        );
+        setAvailableSOSEvents(eventsWithLocation);
+      }
+    };
+
+    fetchActiveEvents(); // Initial fetch
+    const intervalId = setInterval(fetchActiveEvents, 10000); // Repeat every 10s
+
+    return () => clearInterval(intervalId); // Cleanup
+  }, [isVolunteer]);
+
+
   const checkVolunteerStatus = async () => {
     if (!user) return;
-    
+
     const { data } = await supabase
-      .from('volunteers')
-      .select('*')
-      .eq('user_id', user.id)
+      .from("volunteers")
+      .select("*")
+      .eq("user_id", user.id)
       .maybeSingle();
 
     setIsVolunteer(!!data);
@@ -55,20 +113,28 @@ export const VolunteerDashboard: React.FC = () => {
   const fetchNearbySOSEvents = async () => {
     // In a real app, this would filter by location and range
     const { data } = await supabase
-      .from('sos_events')
-      .select('*')
-      .eq('status', 'active')
-      .order('created_at', { ascending: false });
+      .from("sos_events")
+      .select("*")
+      .eq("status", "active")
+      .order("created_at", { ascending: false });
 
     if (data) {
       // Add location names to events
       const eventsWithLocation = await Promise.all(
-        data.map(async (event) => {
+        data.map(async (event: SOSEvent) => {
           try {
-            const locationName = await reverseGeocode(event.latitude, event.longitude);
+            const locationName = await reverseGeocode(
+              event.latitude,
+              event.longitude
+            );
             return { ...event, locationName };
           } catch {
-            return { ...event, locationName: `${event.latitude.toFixed(4)}, ${event.longitude.toFixed(4)}` };
+            return {
+              ...event,
+              locationName: `${event.latitude.toFixed(
+                4
+              )}, ${event.longitude.toFixed(4)}`,
+            };
           }
         })
       );
@@ -80,36 +146,43 @@ export const VolunteerDashboard: React.FC = () => {
     if (!user) return;
 
     if (isVolunteer) {
-      await supabase
-        .from('volunteers')
-        .delete()
-        .eq('user_id', user.id);
+      await supabase.from("volunteers").delete().eq("user_id", user.id);
       setIsVolunteer(false);
     } else {
-      await supabase
-        .from('volunteers')
-        .insert({
-          user_id: user.id,
-          is_available: true,
-          max_range_meters: 1000
-        });
+      await supabase.from("volunteers").insert({
+        user_id: user.id,
+        is_available: true,
+        max_range_meters: 1000,
+      });
       setIsVolunteer(true);
     }
   };
 
-  const respondToSOS = async (eventId: string, responseType: 'accepted' | 'declined') => {
+  const respondToSOS = async (
+    eventId: string,
+    responseType: "accepted" | "declined",
+    latitude?: number,
+    longitude?: number
+  ) => {
     if (!user) return;
 
-    await supabase
-      .from('volunteer_responses')
-      .insert({
-        sos_event_id: eventId,
-        volunteer_id: user.id,
-        response_type: responseType
-      });
+    await supabase.from("volunteer_responses").insert({
+      sos_event_id: eventId,
+      volunteer_id: user.id,
+      response_type: responseType,
+      volunteer_name:
+        user.user_metadata?.name || user.email || "Unknown Volunteer",
+      volunteer_phone: user.user_metadata?.phone || "",
+    });
 
-    // Remove from available events
-    setAvailableSOSEvents(prev => prev.filter(event => event.id !== eventId));
+    // setAvailableSOSEvents((prev) =>
+    //   prev.filter((event) => event.id !== eventId)
+    // );
+
+    if (responseType === "accepted" && latitude && longitude) {
+      const mapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
+      window.open(mapsUrl, "_blank");
+    }
   };
 
   if (loading) {
@@ -127,7 +200,9 @@ export const VolunteerDashboard: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-gray-600">
-              {isVolunteer ? 'You are registered as a volunteer' : 'Join as a volunteer to help others'}
+              {isVolunteer
+                ? "You are registered as a volunteer"
+                : "Join as a volunteer to help others"}
             </p>
             {isVolunteer && (
               <p className="text-sm text-green-600 mt-1">
@@ -139,11 +214,11 @@ export const VolunteerDashboard: React.FC = () => {
             onClick={toggleVolunteerStatus}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
               isVolunteer
-                ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                : 'bg-green-600 text-white hover:bg-green-700'
+                ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                : "bg-green-600 text-white hover:bg-green-700"
             }`}
           >
-            {isVolunteer ? 'Disable' : 'Become Volunteer'}
+            {isVolunteer ? "Disable" : "Become Volunteer"}
           </button>
         </div>
       </div>
@@ -151,13 +226,15 @@ export const VolunteerDashboard: React.FC = () => {
       {isVolunteer && (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Active Emergencies Near You</h3>
-          
+
           {availableSOSEvents.length === 0 ? (
             <div className="bg-white rounded-xl p-8 text-center shadow-sm border">
               <div className="text-gray-400 mb-2">
                 <MapPin className="h-12 w-12 mx-auto" />
               </div>
-              <p className="text-gray-500">No active emergencies in your area</p>
+              <p className="text-gray-500">
+                No active emergencies in your area
+              </p>
               <p className="text-sm text-gray-400 mt-1">
                 We'll notify you when someone needs help nearby
               </p>
@@ -165,14 +242,27 @@ export const VolunteerDashboard: React.FC = () => {
           ) : (
             <div className="space-y-3">
               {availableSOSEvents.map((event) => (
-                <div key={event.id} className="bg-white rounded-xl p-4 shadow-sm border">
+                <div
+                  key={event.id}
+                  className="bg-white rounded-xl p-4 shadow-sm border"
+                >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center space-x-2">
-                      {event.type === 'Health' && <Heart className="h-5 w-5 text-red-500" />}
-                      {event.type === 'Fire' && <Flame className="h-5 w-5 text-orange-500" />}
-                      {event.type === 'Theft/Threat' && <Shield className="h-5 w-5 text-purple-500" />}
-                      {event.type === 'Other' && <HelpCircle className="h-5 w-5 text-gray-500" />}
-                      <span className="font-medium">{event.type} Emergency</span>
+                      {event.type === "Health" && (
+                        <Heart className="h-5 w-5 text-red-500" />
+                      )}
+                      {event.type === "Fire" && (
+                        <Flame className="h-5 w-5 text-orange-500" />
+                      )}
+                      {event.type === "Theft/Threat" && (
+                        <Shield className="h-5 w-5 text-purple-500" />
+                      )}
+                      {event.type === "Other" && (
+                        <HelpCircle className="h-5 w-5 text-gray-500" />
+                      )}
+                      <span className="font-medium">
+                        {event.type} Emergency
+                      </span>
                     </div>
                     <span className="text-xs text-gray-500 flex items-center">
                       <Clock className="h-3 w-3 mr-1" />
@@ -183,11 +273,22 @@ export const VolunteerDashboard: React.FC = () => {
                   <div className="mb-4">
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-sm text-gray-600 flex items-center">
-                      <MapPin className="h-4 w-4 mr-1" />
-                        {event.locationName || event.address || 'Getting location...'}
+                        <MapPin className="h-4 w-4 mr-1" />
+                        {event.locationName ||
+                          event.address ||
+                          "Getting location..."}
                       </p>
                       <button
-                        onClick={() => window.open(generateGoogleMapsUrl(event.latitude, event.longitude, `${event.type} Emergency`), '_blank')}
+                        onClick={() =>
+                          window.open(
+                            generateGoogleMapsUrl(
+                              event.latitude,
+                              event.longitude,
+                              `${event.type} Emergency`
+                            ),
+                            "_blank"
+                          )
+                        }
                         className="flex items-center text-blue-600 hover:text-blue-700 text-xs font-medium"
                       >
                         <ExternalLink className="h-3 w-3 mr-1" />
@@ -195,19 +296,28 @@ export const VolunteerDashboard: React.FC = () => {
                       </button>
                     </div>
                     {event.description && (
-                      <p className="text-sm text-gray-600 mt-2">{event.description}</p>
+                      <p className="text-sm text-gray-600 mt-2">
+                        {event.description}
+                      </p>
                     )}
                   </div>
 
                   <div className="flex space-x-3">
                     <button
-                      onClick={() => respondToSOS(event.id, 'accepted')}
+                      onClick={() =>
+                        respondToSOS(
+                          event.id,
+                          "accepted",
+                          event.latitude,
+                          event.longitude
+                        )
+                      }
                       className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"
                     >
                       Accept & Respond
                     </button>
                     <button
-                      onClick={() => respondToSOS(event.id, 'declined')}
+                      onClick={() => respondToSOS(event.id, "declined")}
                       className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-4 rounded-lg font-medium transition-colors"
                     >
                       Decline
