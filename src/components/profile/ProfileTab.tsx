@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
-import { User, Phone, Heart, Plus, Edit2, Save, X } from 'lucide-react';
+import { User, Phone, Heart, Plus, Edit2, Save, X, BookOpen } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { EmergencyContact } from '../../types';
+import LearnPage from './LearnPage';
 
 interface UserProfile {
   user_id: string;
@@ -18,6 +20,7 @@ export const ProfileTab: React.FC = () => {
   const [isAddingContact, setIsAddingContact] = useState(false);
   const [editingContact, setEditingContact] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showLearnPage, setShowLearnPage] = useState(false);
   const { user, signOut } = useAuth();
 
   const [profileForm, setProfileForm] = useState({
@@ -59,7 +62,6 @@ export const ProfileTab: React.FC = () => {
         medical_info: data.medical_info
       });
     } else {
-      // Create initial profile
       const initialProfile = {
         user_id: user.id,
         name: user.user_metadata?.name || '',
@@ -117,7 +119,6 @@ export const ProfileTab: React.FC = () => {
     if (!user) return;
 
     if (editingContact) {
-      // Update existing contact
       const { error } = await supabase
         .from('emergency_contacts')
         .update(contactForm)
@@ -134,7 +135,6 @@ export const ProfileTab: React.FC = () => {
         setEditingContact(null);
       }
     } else {
-      // Add new contact
       const { data, error } = await supabase
         .from('emergency_contacts')
         .insert({
@@ -181,6 +181,11 @@ export const ProfileTab: React.FC = () => {
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
       </div>
     );
+  }
+
+  // ✅ THIS IS THE KEY FIX - Conditional rendering at the TOP LEVEL
+  if (showLearnPage) {
+    return <LearnPage onBack={() => setShowLearnPage(false)} />;
   }
 
   return (
@@ -274,6 +279,32 @@ export const ProfileTab: React.FC = () => {
                 </p>
               </div>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* Learn Button Section */}
+      <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-xl p-6 shadow-sm border border-red-200">
+        <div className="flex items-start space-x-4">
+          <div className="bg-red-600 p-3 rounded-full">
+            <BookOpen className="h-6 w-6 text-white" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-gray-800 mb-1">
+              Emergency Learning Center
+            </h3>
+            <p className="text-sm text-gray-600 mb-3">
+              Learn how to respond to health emergencies, fires, threats, and natural disasters
+            </p>
+            <button
+              onClick={() => {
+                console.log('Learn button clicked!');
+                setShowLearnPage(true);
+              }}
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-full transition-colors shadow-md"
+            >
+              Start Learning
+            </button>
           </div>
         </div>
       </div>
