@@ -232,9 +232,7 @@ export const SOSStatus: React.FC<SOSStatusProps> = ({
                       </div>
                     ))}
 
-                    <button className="p-2 text-green-600 hover:bg-green-100 rounded-full transition-colors">
-                      <MessageCircle className="h-4 w-4" />
-                    </button>
+
                   </div>
                 </div>
               )
