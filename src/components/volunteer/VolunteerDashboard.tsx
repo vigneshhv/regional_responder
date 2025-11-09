@@ -61,10 +61,12 @@ export const VolunteerDashboard: React.FC = () => {
     if (!isVolunteer) return;
 
     const fetchActiveEvents = async () => {
+     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
       const { data } = await supabase
         .from("sos_events")
         .select("*")
         .eq("status", "active")
+        .gte("created_at", oneHourAgo)
         .order("created_at", { ascending: false });
 
       if (data) {
@@ -112,10 +114,12 @@ export const VolunteerDashboard: React.FC = () => {
 
   const fetchNearbySOSEvents = async () => {
     // In a real app, this would filter by location and range
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     const { data } = await supabase
       .from("sos_events")
       .select("*")
       .eq("status", "active")
+      .gte("created_at", oneHourAgo)
       .order("created_at", { ascending: false });
 
     if (data) {
